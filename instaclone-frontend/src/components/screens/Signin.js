@@ -2,6 +2,8 @@ import React,{useState,useContext,} from 'react'
 import {Link,useHistory} from 'react-router-dom'
 import {UserContext} from '../../App'
 import M from 'materialize-css'
+import GoogleAuthButton from '../GoogleAuthButton'
+import PasswordField from '../PasswordField'
 
 const SignIn  = ()=>{
     const {state,dispatch} = useContext(UserContext)
@@ -10,7 +12,7 @@ const SignIn  = ()=>{
     const [email,setEmail] = useState("")
     const PostData = ()=>{
         if(!/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(email)){
-            M.toast({html: "invalid email",classes:"#c62828 red darken-3"})
+            M.toast({html:"That email does not look right",classes:"toast-error"})
             return
         }
         fetch("/signin",{
@@ -26,14 +28,14 @@ const SignIn  = ()=>{
         .then(data=>{
             console.log(data)
            if(data.error){
-              M.toast({html: data.error,classes:"#c62828 red darken-3"})
+              M.toast({html: data.error,classes:"toast-error"})
            }
            else{
                localStorage.setItem("jwt",data.token)
                localStorage.setItem("user",JSON.stringify(data.user))
                console.log(JSON.stringify(data.user))
                dispatch({type:"USER",payload:data.user})
-               M.toast({html:"signedin success",classes:"#43a047 green darken-1"})
+               M.toast({html:"Signed in",classes:"toast-ok"})
                history.push('/')
            }
         }).catch(err=>{
@@ -50,17 +52,18 @@ const SignIn  = ()=>{
             value={email}
             onChange={(e)=>setEmail(e.target.value)}
             />
-            <input
-            type="password"
-            placeholder="password"
+            <PasswordField
             value={password}
-            onChange={(e)=>setPasword(e.target.value)}
+            onChange={setPasword}
+            autoComplete="current-password"
             />
-            <button className="btn waves-effect waves-light #64b5f6 blue darken-1"
+            <button className="btn waves-effect waves-light"
             onClick={()=>PostData()}
             >
-                Login
+                Log in
             </button>
+            <div className="auth-divider">OR</div>
+            <GoogleAuthButton />
             <h6>
                 <Link to="/signup">Dont have an account ?</Link>
             </h6>

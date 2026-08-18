@@ -14,6 +14,18 @@ export const reducer = (state,action)=>{
             following:action.payload.following
         }
     }
+    if(action.type==="SAVED"){
+        return {
+            ...state,
+            saved:action.payload
+        }
+    }
+    if(action.type==="PRIVACY"){
+        return {
+            ...state,
+            isPrivate:action.payload
+        }
+    }
     if(action.type==="UPDATEPIC"){
         return {
             ...state,

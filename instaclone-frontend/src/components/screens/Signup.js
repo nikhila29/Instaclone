@@ -1,11 +1,15 @@
 import React,{useState,useEffect} from 'react'
 import {Link,useHistory} from 'react-router-dom'
 import M from 'materialize-css'
+import uploadImage from '../../uploadImage'
+import GoogleAuthButton from '../GoogleAuthButton'
+import PasswordField from '../PasswordField'
 const SignIn  = ()=>{
     const history = useHistory()
     const [name,setName] = useState("")
     const [password,setPasword] = useState("")
     const [email,setEmail] = useState("")
+    const [username,setUsername] = useState("")
     const [image,setImage] = useState("")
     const [url,setUrl] = useState(undefined)
     useEffect(()=>{
@@ -14,25 +18,23 @@ const SignIn  = ()=>{
         }
     },[url])
     const uploadPic = ()=>{
-        const data = new FormData()
-        data.append("file",image)
-        data.append("upload_preset","insta-clone")
-        data.append("cloud_name","bnp")
-        fetch("https://api.cloudinary.com/v1_1/cnq/image/upload",{
-            method:"post",
-            body:data
-        })
-        .then(res=>res.json())
-        .then(data=>{
-           setUrl(data.url)
+        uploadImage(image)
+        .then(hostedUrl=>{
+           setUrl(hostedUrl)
         })
         .catch(err=>{
             console.log(err)
+            //without this the upload failure is silent and signup never happens
+            M.toast({html:err.message || "Could not upload the picture",classes:"toast-error"})
         })
     }
     const uploadFields = ()=>{
-        if(!/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(email)){
-            M.toast({html: "invalid email",classes:"#c62828 red darken-3"})
+        if(!name || !password){
+            M.toast({html:"Please fill in every field",classes:"toast-error"})
+            return
+        }
+        if(!/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(email)){
+            M.toast({html:"That email does not look right",classes:"toast-error"})
             return
         }
         fetch("/signup",{
@@ -42,6 +44,7 @@ const SignIn  = ()=>{
             },
             body:JSON.stringify({
                 name,
+                username,
                 password,
                 email,
                 pic:url
@@ -49,10 +52,10 @@ const SignIn  = ()=>{
         }).then(res=>res.json())
         .then(data=>{
            if(data.error){
-              M.toast({html: data.error,classes:"#c62828 red darken-3"})
+              M.toast({html: data.error,classes:"toast-error"})
            }
            else{
-               M.toast({html:data.message,classes:"#43a047 green darken-1"})
+               M.toast({html:data.message,classes:"toast-ok"})
                history.push('/signin')
            }
         }).catch(err=>{
@@ -80,30 +83,38 @@ const SignIn  = ()=>{
             />
             <input
             type="text"
+            placeholder="username"
+            value={username}
+            onChange={(e)=>setUsername(e.target.value.toLowerCase())}
+            />
+            <p className="field-hint">letters, numbers, dots and underscores — leave blank and we pick one</p>
+            <input
+            type="text"
             placeholder="email"
             value={email}
             onChange={(e)=>setEmail(e.target.value)}
             />
-            <input
-            type="password"
-            placeholder="password"
+            <PasswordField
             value={password}
-            onChange={(e)=>setPasword(e.target.value)}
+            onChange={setPasword}
+            autoComplete="new-password"
             />
             <div className="file-field input-field">
-            <div className="btn #64b5f6 blue darken-1">
-                <span>Upload pic</span>
+            <div className="btn">
+                <span>Profile photo</span>
                 <input type="file" onChange={(e)=>setImage(e.target.files[0])} />
             </div>
             <div className="file-path-wrapper">
                 <input className="file-path validate" type="text" />
             </div>
             </div>
-            <button className="btn waves-effect waves-light #64b5f6 blue darken-1"
+            <button className="btn waves-effect waves-light"
             onClick={()=>PostData()}
             >
-                SignUP
+                Sign up
             </button>
+            <div className="auth-divider">OR</div>
+            <GoogleAuthButton />
             <h5>
                 <Link to="/signin">Already have an account ?</Link>
             </h5>

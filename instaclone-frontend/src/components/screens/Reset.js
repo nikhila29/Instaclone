@@ -6,7 +6,7 @@ const Reset  = ()=>{
     const [email,setEmail] = useState("")
     const PostData = ()=>{
         if(!/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(email)){
-            M.toast({html: "invalid email",classes:"#c62828 red darken-3"})
+            M.toast({html:"That email does not look right",classes:"toast-error"})
             return
         }
         fetch('/reset-password',{
@@ -20,10 +20,10 @@ const Reset  = ()=>{
         }).then(res=>res.json())
         .then(data=>{
            if(data.error){
-              M.toast({html: data.error,classes:"#c62828 red darken-3"})
+              M.toast({html: data.error,classes:"toast-error"})
            }
            else{
-               M.toast({html:data.message,classes:"#43a047 green darken-1"})
+               M.toast({html:data.message,classes:"toast-ok"})
                history.push('/signin')
            }
         }).catch(err=>{

@@ -1,116 +1,150 @@
 import React,{useEffect,useState,useContext} from 'react'
 import {UserContext} from '../../App'
+import {Link} from 'react-router-dom'
+import M from 'materialize-css'
+import uploadImage from '../../uploadImage'
+import UserListModal from '../UserListModal'
+import Avatar from '../Avatar'
+import PostModal from '../PostModal'
+import PostGrid from '../PostGrid'
 
-const Profile  = ()=>{
-    const [mypics,setPics] = useState([])
+const Profile = ()=>{
     const {state,dispatch} = useContext(UserContext)
+    const [mypics,setPics] = useState([])
+    const [savedPosts,setSaved] = useState([])
+    const [tab,setTab] = useState("posts")
     const [image,setImage] = useState("")
-    useEffect(()=>{
-       fetch('/mypost',{
-           headers:{
-               "Authorization":"Bearer "+localStorage.getItem("jwt")
-           }
-       }).then(res=>res.json())
-       .then(result=>{
-           console.log(result)
-           setPics(result.mypost)
-       })
-    },[])
-    useEffect(()=>{
-       if(image){
-        const data = new FormData()
-        data.append("file",image)
-        data.append("upload_preset","insta-clone")
-        data.append("cloud_name","bnp")
-        fetch("https://api.cloudinary.com/v1_1/bnp/image/upload",{
-            method:"post",
-            body:data
-        })
-        .then(res=>res.json())
-        .then(data=>{
-    
-       
-           fetch('/updatepic',{
-               method:"put",
-               headers:{
-                   "Content-Type":"application/json",
-                   "Authorization":"Bearer "+localStorage.getItem("jwt")
-               },
-               body:JSON.stringify({
-                   pic:data.url
-               })
-           }).then(res=>res.json())
-           .then(result=>{
-               console.log(result)
-               localStorage.setItem("user",JSON.stringify({...state,pic:result.pic}))
-               dispatch({type:"UPDATEPIC",payload:result.pic})
-               //window.location.reload()
-           })
-       
-        })
-        .catch(err=>{
-            console.log(err)
-        })
-       }
-    },[image])
-    const updatePhoto = (file)=>{
-        setImage(file)
-    }
-   return (
-       <div style={{maxWidth:"550px",margin:"0px auto"}}>
-           <div style={{
-              margin:"18px 0px",
-               borderBottom:"1px solid grey"
-           }}>
+    const [listModal,setListModal] = useState(null)
+    const [openPost,setOpenPost] = useState(null)
 
-         
-           <div style={{
-               display:"flex",
-               justifyContent:"space-around",
-              
-           }}>
-               <div>
-                   <img alt='pic' style={{width:"160px",height:"160px",borderRadius:"80px"}}
-                   src={state?state.pic:"loading"}
-                   />
-                 
-               </div>
-               <div>
-                   <h4>{state?state.name:"loading"}</h4>
-                   <h5>{state?state.email:"loading"}</h5>
-                   <div style={{display:"flex",justifyContent:"space-between",width:"108%"}}>
-                       <h6>{mypics.length} posts</h6>
-                       <h6>{state?state.followers.length:"0"} followers</h6>
-                       <h6>{state?state.following.length:"0"} following</h6>
+    const authHeaders = {
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+localStorage.getItem("jwt")
+    }
+
+    useEffect(()=>{
+       fetch('/mypost',{headers:authHeaders})
+       .then(res=>res.json())
+       .then(result=>{
+           //an error response has no mypost array — keep the empty list instead of crashing the render
+           setPics(result.mypost || [])
+       }).catch(err=>console.log(err))
+       // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[])
+
+    //saved posts are only fetched when that tab is opened
+    useEffect(()=>{
+        if(tab !== "saved"){
+            return
+        }
+        fetch('/saved',{headers:authHeaders})
+        .then(res=>res.json())
+        .then(result=>setSaved(result.posts || []))
+        .catch(err=>console.log(err))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[tab])
+
+    useEffect(()=>{
+       if(!image){
+           return
+       }
+       uploadImage(image)
+       .then(hostedUrl=>fetch('/updatepic',{
+           method:"put",
+           headers:authHeaders,
+           body:JSON.stringify({pic:hostedUrl})
+       }).then(res=>res.json()))
+       .then(result=>{
+           if(result.error){
+               M.toast({html:result.error,classes:"toast-error"})
+               return
+           }
+           localStorage.setItem("user",JSON.stringify({...state,pic:result.pic}))
+           dispatch({type:"UPDATEPIC",payload:result.pic})
+           M.toast({html:"Photo updated",classes:"toast-ok"})
+       })
+       .catch(err=>{
+           console.log(err)
+           M.toast({html:err.message || "Could not upload the photo",classes:"toast-error"})
+       })
+       // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[image])
+
+    const applyChange = (postId,changes)=>{
+        setPics(list=>list.map(post=>post._id === postId ? {...post,...changes} : post))
+        setSaved(list=>list.map(post=>post._id === postId ? {...post,...changes} : post))
+        setOpenPost(open=>open && open._id === postId ? {...open,...changes} : open)
+    }
+
+    const shown = tab === "saved" ? savedPosts : mypics
+
+    return (
+       <div className="page">
+           {openPost &&
+               <PostModal post={openPost} onClose={()=>setOpenPost(null)} onChanged={applyChange}/>
+           }
+           {listModal && state &&
+               <UserListModal
+                   title={listModal === "followers" ? "Followers" : "Following"}
+                   url={`/user/${state._id}/${listModal}`}
+                   onClose={()=>setListModal(null)}
+               />
+           }
+
+           <div className="profile-head">
+               <Avatar className="avatar" alt={state?state.username:"profile"} src={state?state.pic:""}/>
+               <div className="profile-meta">
+                   <div className="profile-title">
+                       <h4>{state ? (state.username || state.name) : "loading"}</h4>
+                       {state?.isPrivate && <span className="tag"><i className="material-icons" style={{fontSize:"12px",verticalAlign:"-2px"}}>lock</i> private</span>}
+                       <Link className="ghost-btn" to="/settings">Settings</Link>
+                       {state?.isAdmin && <span className="tag tag-admin">admin</span>}
+                   </div>
+                   <p className="display-name">{state?state.name:""}</p>
+                   <p className="email">{state?state.email:""}</p>
+
+                   <div className="profile-counts">
+                       <h6><b>{mypics.length}</b> posts</h6>
+                       <button className="count-btn" onClick={()=>setListModal("followers")}>
+                           <b>{state?state.followers.length:0}</b> followers
+                       </button>
+                       <button className="count-btn" onClick={()=>setListModal("following")}>
+                           <b>{state?state.following.length:0}</b> following
+                       </button>
+                   </div>
+
+                   <div className="file-field input-field" style={{marginTop:"16px"}}>
+                       <div className="btn">
+                           <span>Update photo</span>
+                           <input type="file" accept="image/*" onChange={(e)=>setImage(e.target.files[0])} />
+                       </div>
+                       <div className="file-path-wrapper">
+                           <input className="file-path validate" type="text" />
+                       </div>
                    </div>
 
                </div>
            </div>
-        
-            <div className="file-field input-field" style={{margin:"10px"}}>
-            <div className="btn #64b5f6 blue darken-1">
-                <span>Update pic</span>
-                <input type="file" onChange={(e)=>updatePhoto(e.target.files[0])} />
-            </div>
-            <div className="file-path-wrapper">
-                <input className="file-path validate" type="text" />
-            </div>
-            </div>
-            </div>      
-           <div className="gallery">
-               {
-                   mypics.map(item=>{
-                       return(
-                        <img key={item._id} className="item" src={item.photo} alt={item.title}/>  
-                       )
-                   })
-               }
 
-           
+           <div className="profile-tabs">
+               <button className={tab === "posts" ? "profile-tab active" : "profile-tab"} onClick={()=>setTab("posts")}>
+                   <i className="material-icons">grid_on</i> Posts
+               </button>
+               <button className={tab === "saved" ? "profile-tab active" : "profile-tab"} onClick={()=>setTab("saved")}>
+                   <i className="material-icons">bookmark_border</i> Saved
+               </button>
            </div>
-       </div>
-   )
-}
 
+           {shown.length === 0
+               ? <div className="panel empty-state" style={{marginTop:"24px"}}>
+                   <i className="material-icons">{tab === "saved" ? "bookmark_border" : "photo_library"}</i>
+                   <h5>{tab === "saved" ? "Nothing saved yet" : "No posts yet"}</h5>
+                   <p>{tab === "saved" ? "Posts you save will appear here." : "Photos you share will appear here."}</p>
+                 </div>
+               : <PostGrid posts={shown} onOpen={setOpenPost}/>
+           }
+       </div>
+    )
+}
 
 export default Profile

@@ -2,7 +2,11 @@ module.exports={
     MONGOURI:process.env.MONGOURI,
     JWT_SECRET:process.env.JWT_SEC,
     SENDGRID_API:process.env.SENDGRID_API,
-    EMAIL:process.env.EMAIL
+    EMAIL:process.env.EMAIL,
+    GOOGLE_CLIENT_ID:process.env.GOOGLE_CLIENT_ID,
+    ADMIN_EMAILS:process.env.ADMIN_EMAILS,
+    CLOUDINARY_CLOUD_NAME:process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY:process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET:process.env.CLOUDINARY_API_SECRET,
+    CLOUDINARY_FOLDER:process.env.CLOUDINARY_FOLDER
 }
-//qAcNeagrxHT2nC3L
-//mongodb+srv://nikhila:<password>@cluster0.ypxcl.mongodb.net/myFirstDatabase?retryWrites=true&w=majority

@@ -2,12 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" sizes="any" />
+    <!-- browsers that support it pick the SVG, which stays sharp at any size -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#d62976" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Instaclone — share photos, follow people, like and comment"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
@@ -26,7 +28,7 @@
       <!-- Compiled and minified CSS -->
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <title>InstaClone App</title>
+    <title>Instaclone</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

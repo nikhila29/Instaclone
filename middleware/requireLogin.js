@@ -16,10 +16,16 @@ module.exports = (req,res,next)=>{
 
         const {_id} = payload
         User.findById(_id).then(userdata=>{
+            if(!userdata){
+                //token is still valid but the account no longer exists
+                return res.status(401).json({error:"you must be logged in"})
+            }
             req.user = userdata
             next()
+        }).catch(err=>{
+            console.log(err)
+            res.status(500).json({error:"could not verify login"})
         })
-        
-        
+
     })
 }
