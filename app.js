@@ -48,10 +48,13 @@ app.use(require('./routes/message'))
 
 
 if(process.env.NODE_ENV=="production"){
-    app.use(express.static('instaclone-frontend/build'))
     const path = require('path')
+    //resolved from this file, not the working directory — a host may start the
+    //process from somewhere else, and then every asset silently returns index.html
+    const buildDir = path.resolve(__dirname,'instaclone-frontend','build')
+    app.use(express.static(buildDir))
     app.get("*",(req,res)=>{
-        res.sendFile(path.resolve(__dirname,'instaclone-frontend','build','index.html'))
+        res.sendFile(path.resolve(buildDir,'index.html'))
     })
 }
 

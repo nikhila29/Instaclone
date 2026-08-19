@@ -23,7 +23,7 @@ export const UserContext = createContext()
 
 const Routing = ()=>{
   const history = useHistory()
-  const {state,dispatch} = useContext(UserContext)
+  const {dispatch} = useContext(UserContext)
   useEffect(()=>{
     const user = JSON.parse(localStorage.getItem("user"))
     if(user){
@@ -35,6 +35,8 @@ const Routing = ()=>{
       if(!publicPaths.some(publicPath=>path.startsWith(publicPath)))
            history.push('/signin')
     }
+    //runs once on mount: this restores the stored session, it must not re-run
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
   
   return(

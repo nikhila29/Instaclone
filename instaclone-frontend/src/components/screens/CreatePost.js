@@ -135,7 +135,7 @@ const CretePost = ()=>{
                            className={index === current ? "thumb active" : "thumb"}
                            onClick={()=>setCurrent(index)}
                        >
-                           <img src={image.preview} alt={`Photo ${index+1}`}/>
+                           <img src={image.preview} alt={`Selection ${index+1}`}/>
                            <button className="thumb-remove" title="Remove" onClick={(e)=>{e.stopPropagation();removeImage(index)}}>
                                <i className="material-icons">close</i>
                            </button>

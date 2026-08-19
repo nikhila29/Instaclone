@@ -16,6 +16,8 @@ const SignIn  = ()=>{
         if(url){
             uploadFields()
         }
+        //fires when the upload finishes; uploadFields is redefined every render
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[url])
     const uploadPic = ()=>{
         uploadImage(image)

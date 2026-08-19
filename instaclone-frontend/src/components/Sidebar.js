@@ -1,5 +1,5 @@
 import React,{useContext,useEffect,useState,useCallback} from 'react'
-import {Link,useHistory,useLocation} from 'react-router-dom'
+import {Link,useLocation} from 'react-router-dom'
 import {UserContext} from '../App'
 import Avatar from './Avatar'
 import {ShareIcon} from './icons'
@@ -11,8 +11,7 @@ import {useSocketEvent} from '../socket'
  * medium ones, and a bottom bar on phones — all from CSS, one markup tree.
  */
 const Sidebar = ()=>{
-    const {state,dispatch} = useContext(UserContext)
-    const history = useHistory()
+    const {state} = useContext(UserContext)
     const location = useLocation()
     const [searchOpen,setSearchOpen] = useState(false)
     const [search,setSearch] = useState('')
