@@ -90,6 +90,8 @@ const UserProfile = ()=>{
                <UserListModal
                    title={listModal === "followers" ? "Followers" : "Following"}
                    url={`/user/${userid}/${listModal}`}
+                   kind={listModal}
+                   isOwn={relationship.isSelf}
                    onClose={()=>setListModal(null)}
                />
            }

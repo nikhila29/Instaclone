@@ -1,3 +1,6 @@
 dev.js
 node_modules/
 .env
+
+# built by the vercel-build script during deployment
+instaclone-frontend/build/

@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 const requireLogin  = require('../middleware/requireLogin')
 const Post =  mongoose.model("Post")
 const User = mongoose.model("User")
-const {notify,clearNotification} = require('../lib/notify')
+const {notify,notifyOnce,convertNotification,clearNotification} = require('../lib/notify')
 
 //what other people are allowed to see about a user
 const PUBLIC_FIELDS = "_id name username pic isPrivate"
@@ -102,7 +102,8 @@ router.put('/follow',requireLogin,(req,res)=>{
             },{new:true})
             .then(()=>User.findById(req.user._id).select("-password"))
             .then(me=>{
-                notify({user:target._id,actor:req.user._id,type:"follow_request"})
+                //one row per person, however many times they re-request
+                notifyOnce({user:target._id,actor:req.user._id,type:"follow_request"})
                 res.json({...me.toObject(),requested:true})
             })
         }
@@ -113,7 +114,7 @@ router.put('/follow',requireLogin,(req,res)=>{
             $addToSet:{following:target._id}
         },{new:true}).select("-password"))
         .then(me=>{
-            notify({user:target._id,actor:req.user._id,type:"follow"})
+            notifyOnce({user:target._id,actor:req.user._id,type:"follow"})
             res.json({...me.toObject(),requested:false})
         })
     })
@@ -153,6 +154,36 @@ router.put('/unfollow',requireLogin,(req,res)=>{
 })
 
 
+/*
+ * Drops someone from my followers. They keep no access to a private account,
+ * so this is the mirror of them unfollowing me.
+ */
+router.put('/remove-follower',requireLogin,(req,res)=>{
+    const {userId} = req.body
+    if(!userId){
+        return res.status(422).json({error:"userId is required"})
+    }
+    User.findByIdAndUpdate(req.user._id,{
+        $pull:{followers:userId,followRequests:userId}
+    },{new:true}).select("-password")
+    .then(me=>{
+        if(!me){
+            return res.status(404).json({error:"User not found"})
+        }
+        return User.findByIdAndUpdate(userId,{$pull:{following:req.user._id}})
+            .then(()=>{
+                //their "started following you" row no longer reflects anything
+                clearNotification({user:req.user._id,actor:userId,type:{$in:["follow","follow_request"]}})
+                res.json(me)
+            })
+    })
+    .catch(err=>{
+        console.log(err)
+        res.status(500).json({error:"could not remove that follower"})
+    })
+})
+
+
 //people waiting for me to approve them
 router.get('/follow-requests',requireLogin,(req,res)=>{
     User.findById(req.user._id)
@@ -183,8 +214,9 @@ router.put('/approve-request',requireLogin,(req,res)=>{
         .then(updated=>User.findByIdAndUpdate(userId,{
             $addToSet:{following:req.user._id}
         }).then(()=>{
-            //the request row becomes an "accepted" row for the requester
-            clearNotification({user:req.user._id,actor:userId,type:"follow_request"})
+            //they are a follower now, so my row becomes "started following you"
+            //— which is the row that offers Follow back
+            convertNotification({user:req.user._id,actor:userId,from:"follow_request",to:"follow"})
             notify({user:userId,actor:req.user._id,type:"follow_accepted"})
             res.json(updated)
         }))

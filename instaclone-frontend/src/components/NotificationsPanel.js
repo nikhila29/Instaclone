@@ -76,6 +76,12 @@ const NotificationsPanel = ({onClose,onSeen})=>{
             if(approve && updated.followers){
                 localStorage.setItem("user",JSON.stringify({...state,followers:updated.followers}))
                 dispatch({type:"UPDATE",payload:{followers:updated.followers,following:state.following}})
+                //the request row has become a "started following you" row, which
+                //carries Follow back — pull it in without closing the panel
+                fetch('/notifications',{headers:authHeaders})
+                    .then(res=>res.ok ? res.json() : {notifications:[]})
+                    .then(feed=>setItems(feed.notifications || []))
+                    .catch(err=>console.log(err))
             }
         })
         .catch(err=>console.log(err))
@@ -123,7 +129,13 @@ const NotificationsPanel = ({onClose,onSeen})=>{
         }
     }
 
+    const pendingIds = new Set(requests.map(user=>user._id))
     const visible = items.filter(item=>{
+        //a request that is still pending is shown by the section above, with
+        //Confirm and Delete on it — listing it here as well is a duplicate
+        if(item.type === "follow_request" && pendingIds.has(item.actor._id)){
+            return false
+        }
         if(filter === "all"){ return true }
         if(filter === "follow"){ return item.type.startsWith("follow") }
         return item.type === filter

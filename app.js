@@ -7,6 +7,16 @@ const PORT = process.env.PORT || 3003
 const {MONGOURI} = require('./config/keys')
 
 
+/*
+ * Without this a missing connection string surfaces as a mongoose stack trace
+ * deep inside node_modules. On a host like Vercel the values come from the
+ * project's environment variables, not from the git-ignored .env file.
+ */
+if(!MONGOURI){
+    console.log("MONGOURI is not set — add it to this environment's variables (on Vercel: Project → Settings → Environment Variables), then redeploy")
+    process.exit(1)
+}
+
 mongoose.connect(MONGOURI,{
     useNewUrlParser:true,
     useUnifiedTopology: true
@@ -45,6 +55,21 @@ if(process.env.NODE_ENV=="production"){
     })
 }
 
-app.listen(PORT,()=>{
+//socket.io needs the raw http server, so express is wrapped rather than
+//calling app.listen directly
+const http = require('http')
+const server = http.createServer(app)
+require('./lib/realtime').init(server)
+
+//a busy port otherwise prints ten lines of node internals instead of the cause
+server.on('error',err=>{
+    if(err.code === 'EADDRINUSE'){
+        console.log(`port ${PORT} is already in use — stop the other server first`)
+        process.exit(1)
+    }
+    throw err
+})
+
+server.listen(PORT,()=>{
     console.log("server is running on",PORT)
 })

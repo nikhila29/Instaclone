@@ -87,6 +87,8 @@ const Profile = ()=>{
                <UserListModal
                    title={listModal === "followers" ? "Followers" : "Following"}
                    url={`/user/${state._id}/${listModal}`}
+                   kind={listModal}
+                   isOwn={true}
                    onClose={()=>setListModal(null)}
                />
            }

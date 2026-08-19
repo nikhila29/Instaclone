@@ -144,15 +144,26 @@ const Stories = ()=>{
     return (
         <>
         <div className="stories-row">
-            {/* your own bubble doubles as the add button */}
-            <label className="story-bubble story-add" title="Add to your story">
-                <div className={mine ? "story-ring" : "story-ring seen"}>
+            {/* one bubble for yourself: tap it to watch yours, + to add another */}
+            <div className="story-bubble story-add">
+                <div
+                    className={mine && !mine.seen ? "story-ring" : "story-ring seen"}
+                    onClick={()=>{
+                        if(mine){
+                            setOpenIndex(groups.indexOf(mine))
+                            setSlide(0)
+                        }
+                    }}
+                    title={mine ? "View your story" : "You have no story yet"}
+                >
                     <Avatar src={state?.pic} alt={state?.username}/>
                 </div>
-                <span className="plus"><i className="material-icons">add</i></span>
+                <label className="plus" title="Add to your story">
+                    <i className="material-icons">add</i>
+                    <input type="file" accept="image/*" onChange={(e)=>{addStory(e.target.files[0]);e.target.value=""}}/>
+                </label>
                 <span className="story-name">{uploading ? "Adding…" : "Your story"}</span>
-                <input type="file" accept="image/*" onChange={(e)=>{addStory(e.target.files[0]);e.target.value=""}}/>
-            </label>
+            </div>
 
             {groups.filter(group=>group.user._id !== state?._id).map((group,index)=>(
                 <button
@@ -169,15 +180,6 @@ const Stories = ()=>{
                     <span className="story-name">{group.user.username || group.user.name}</span>
                 </button>
             ))}
-
-            {mine && mine.stories.length > 0 &&
-                <button className="story-bubble" onClick={()=>{setOpenIndex(groups.indexOf(mine));setSlide(0)}}>
-                    <div className={mine.seen ? "story-ring seen" : "story-ring"}>
-                        <Avatar src={mine.user.pic} alt={mine.user.username}/>
-                    </div>
-                    <span className="story-name">View yours</span>
-                </button>
-            }
         </div>
 
         {story &&

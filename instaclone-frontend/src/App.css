@@ -242,7 +242,9 @@ input:disabled{ background: var(--surface-2) !important; color: var(--muted) !im
   justify-content: center; border: 2px solid var(--bg);
 }
 .story-add .plus i{ font-size: 13px; }
-.story-add input[type=file]{ display: none; }
+.story-add .plus{ cursor: pointer; }
+.story-add .plus input[type=file]{ display: none; }
+.story-add .story-ring{ cursor: pointer; }
 
 .story-viewer{
   position: fixed; inset: 0; background: #000; z-index: 60;
@@ -813,7 +815,11 @@ input:disabled{ background: var(--surface-2) !important; color: var(--muted) !im
   padding: 6px 20px 14px;
   overflow-x: auto;
   scrollbar-width: none;
+  /* without this the row is squeezed by the scrolling list and the chips
+     get clipped through the middle of their labels */
+  flex: 0 0 auto;
 }
+.notif-chips .chip{ flex: 0 0 auto; }
 .notif-chips::-webkit-scrollbar{ display: none; }
 .chip{
   border: 1px solid var(--border);
@@ -1203,3 +1209,22 @@ button:focus{ background-color: transparent; }
 .password-toggle:hover{ color: var(--text); }
 .password-toggle:focus{ background: none; color: var(--text); }
 .password-toggle i{ font-size: 20px; }
+/* the row splits into a link and its action button */
+.user-row-main{ display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.user-row .ghost-btn{ margin-left: auto; flex: 0 0 auto; }
+
+/* --- realtime chat: typing dots, seen label --- */
+.typing-note{ margin-left:8px; }
+.typing-bubble{ display:flex; flex-direction:row; gap:4px; align-items:center; padding:12px 14px; width:max-content; }
+.typing-bubble span{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--muted);
+    animation:typing-bounce 1.2s infinite ease-in-out;
+}
+.typing-bubble span:nth-child(2){ animation-delay:.15s; }
+.typing-bubble span:nth-child(3){ animation-delay:.3s; }
+@keyframes typing-bounce{
+    0%,60%,100%{ transform:translateY(0); opacity:.45; }
+    30%{ transform:translateY(-4px); opacity:1; }
+}
+.seen-label{ text-align:right; margin:0 4px 4px 0; }

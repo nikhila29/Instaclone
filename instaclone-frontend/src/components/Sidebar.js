@@ -4,6 +4,7 @@ import {UserContext} from '../App'
 import Avatar from './Avatar'
 import {ShareIcon} from './icons'
 import NotificationsPanel from './NotificationsPanel'
+import {useSocketEvent} from '../socket'
 
 /*
  * The app's navigation: a labelled column on wide screens, icons only on
@@ -47,7 +48,11 @@ const Sidebar = ()=>{
 
     useEffect(()=>{ loadUnread() },[loadUnread,location.pathname])
 
-    //poll while the tab is open, so a like elsewhere shows up without a reload
+    //badges react the moment something happens, rather than on the next poll
+    useSocketEvent('message',loadUnread,[loadUnread])
+    useSocketEvent('notification',loadUnread,[loadUnread])
+
+    //the poll stays as a safety net for anything the socket misses
     useEffect(()=>{
         if(!state){
             return

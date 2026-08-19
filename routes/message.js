@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 const requireLogin = require('../middleware/requireLogin')
 const Message = mongoose.model("Message")
 const User = mongoose.model("User")
+const {emitToUser} = require('../lib/realtime')
 
 const PERSON_FIELDS = "_id name username pic"
 const POST_FIELDS = "_id photo title"
@@ -24,7 +25,14 @@ router.post('/share',requireLogin,(req,res)=>{
         return res.status(422).json({error:"you cannot share with yourself"})
     }
     Message.insertMany(rows)
-    .then(created=>res.json({sent:created.length}))
+    .then(created=>{
+        res.json({sent:created.length})
+        //push the shared post into any open Messages screen
+        return Message.find({_id:{$in:created.map(row=>row._id)}})
+            .populate("from",PERSON_FIELDS)
+            .populate("post",POST_FIELDS)
+            .then(full=>full.forEach(message=>emitToUser(message.to,'message',{message})))
+    })
     .catch(err=>{
         console.log(err)
         res.status(500).json({error:"could not share that post"})
@@ -83,6 +91,8 @@ router.get('/messages/:userId',requireLogin,(req,res)=>{
                     return res.status(404).json({error:"User not found"})
                 }
                 res.json({user:person,messages})
+                //tell them their messages to me have been read
+                emitToUser(other,'read',{by:req.user._id})
             })
     )
     .catch(err=>{
@@ -102,7 +112,12 @@ router.post('/messages/:userId',requireLogin,(req,res)=>{
     new Message({from:req.user._id,to:req.params.userId,text:text.trim()})
     .save()
     .then(message=>message.populate("from",PERSON_FIELDS))
-    .then(message=>res.json({message}))
+    .then(message=>{
+        res.json({message})
+        emitToUser(req.params.userId,'message',{message})
+        //so a second tab of mine shows what I just sent
+        emitToUser(req.user._id,'message',{message,mine:true})
+    })
     .catch(err=>{
         console.log(err)
         res.status(500).json({error:"could not send that message"})

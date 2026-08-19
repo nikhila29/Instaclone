@@ -6,7 +6,8 @@
   "scripts": {
     "start": "nodemon --exec /usr/local/bin/node --watch app.js --watch routes --watch models --watch middleware --watch lib --watch config app.js",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix instaclone-frontend && npm run build --prefix instaclone-frontend",
-    "serve": "node app.js"
+    "serve": "node app.js",
+    "vercel-build": "npm install --prefix instaclone-frontend && NODE_OPTIONS=--openssl-legacy-provider npm run build --prefix instaclone-frontend"
   },
   "author": "Nikhilapatel Badri",
   "license": "ISC",
@@ -21,6 +22,10 @@
     "mongoose": "^6.0.12",
     "nodemailer": "^6.7.0",
     "nodemailer-sendgrid-transport": "^0.2.0",
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "socket.io": "^4.8.3"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

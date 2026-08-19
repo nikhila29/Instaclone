@@ -1,6 +1,7 @@
 import React,{useContext,useState} from 'react'
 import {Link,useHistory} from 'react-router-dom'
 import M from 'materialize-css'
+import {closeSocket} from '../../socket'
 import {UserContext} from '../../App'
 
 /*
@@ -71,6 +72,8 @@ const Settings = ()=>{
                 </Link>
                 <div className="settings-divider"></div>
                 <button className="settings-item danger" onClick={()=>{
+                    //drop the websocket too, so it does not reconnect as the old user
+                    closeSocket()
                     localStorage.clear()
                     dispatch({type:"CLEAR"})
                     history.push('/signin')

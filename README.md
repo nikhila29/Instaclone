@@ -15,6 +15,7 @@ An Instagram clone built as a MERN full-stack app — a React single-page fronte
 - Follow / unfollow users, view your own profile and other users' profiles
 - Update your profile picture
 - Search users by name
+- Direct messages and post sharing, delivered in real time over a websocket — a new message appears in an open conversation immediately, with a typing indicator and a "Seen" marker, and the sidebar badges update the moment something happens
 
 ## Tech stack
 
@@ -29,6 +30,7 @@ An Instagram clone built as a MERN full-stack app — a React single-page fronte
 | `@react-oauth/google` | Google Sign-In button and ID token retrieval |
 | Materialize CSS | Styling, cards, modals, toasts |
 | Fetch API | Calls to the backend REST API |
+| `socket.io-client` | Live messages, typing indicators and badge updates (`src/socket.js`) |
 | `web-vitals` | Performance metrics scaffold from CRA |
 
 **Backend** (repo root)
@@ -38,6 +40,7 @@ An Instagram clone built as a MERN full-stack app — a React single-page fronte
 | Node.js + Express 4 | REST API server |
 | MongoDB + Mongoose 6 | Data store and schemas (`models/user.js`, `models/post.js`) |
 | JSON Web Token (`jsonwebtoken`) | Auth tokens, verified in `middleware/requireLogin.js` |
+| `socket.io` | Websocket server (`lib/realtime.js`); the JWT is checked during the handshake and each user joins a room named after their id |
 | `google-auth-library` | Verifies Google ID tokens server-side on `/google-login` |
 | `dotenv` | Loads the root `.env` |
 | bcrypt | Password hashing |
@@ -258,3 +261,5 @@ and change `"proxy"` in `instaclone-frontend/package.json` to the same port.
 **`npm start` in the frontend fails with `could not determine executable to run`** — `node_modules/.bin` was not created because the frontend's `package.json` used to list `npm` itself as a dependency, which makes npm skip bin-linking for the whole tree. That entry has been removed; if you still hit it, delete `node_modules` and `package-lock.json` and reinstall.
 
 **Images don't upload** — `CreatePost.js`, `Profile.js` and `Signup.js` post to a hard-coded Cloudinary cloud name and the `insta-clone` upload preset. Replace those with your own Cloudinary cloud name and unsigned upload preset.
+
+**Messages arrive only after a reload.** The websocket is not connecting. In development the React dev server cannot upgrade a websocket through its proxy, so the browser connects straight to the API on port 3003 — that port has to be reachable, and the API has to be the current code (restart it after pulling). If the API runs somewhere else, point the client at it with `REACT_APP_SOCKET_URL` in `instaclone-frontend/.env` and restart the dev server. A browser console warning of `WebSocket connection to 'ws://localhost:3000/socket.io/...' failed` means the client is still trying to go through the proxy.

@@ -5,6 +5,7 @@ import M from 'materialize-css'
 import Avatar from '../Avatar'
 import {ShareIcon} from '../icons'
 import {timeAgo} from '../../timeAgo'
+import {useSocketEvent,emitTyping} from '../../socket'
 
 /*
  * The inbox: conversations on the left, the open thread on the right.
@@ -18,7 +19,10 @@ const Messages = ()=>{
     const [draft,setDraft] = useState("")
     const [search,setSearch] = useState("")
     const [loading,setLoading] = useState(true)
+    const [typing,setTyping] = useState(false)
+    const [seen,setSeen] = useState(false)
     const bottom = useRef(null)
+    const typingTimer = useRef(null)
 
     const authHeaders = {
         "Content-Type":"application/json",
@@ -36,9 +40,9 @@ const Messages = ()=>{
 
     useEffect(()=>{ loadConversations() },[loadConversations])
 
-    const openThread = (person)=>{
-        setOpenWith(person)
-        fetch(`/messages/${person._id}`,{headers:authHeaders})
+    //also used when a message arrives live: re-reading the thread marks it read
+    const loadThread = useCallback((personId)=>{
+        fetch(`/messages/${personId}`,{headers:authHeaders})
         .then(res=>res.json())
         .then(result=>{
             if(result.error){
@@ -49,13 +53,58 @@ const Messages = ()=>{
             loadConversations()
         })
         .catch(err=>console.log(err))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[loadConversations])
+
+    const openThread = (person)=>{
+        setOpenWith(person)
+        setTyping(false)
+        setSeen(false)
+        loadThread(person._id)
     }
+
+    //a message pushed over the websocket, either to me or from another tab of mine
+    useSocketEvent('message',({message})=>{
+        const fromId = message.from && message.from._id
+        const toId = (message.to && message.to._id) || message.to
+        const otherId = String(fromId) === String(state?._id) ? String(toId) : String(fromId)
+        if(openWith && otherId === String(openWith._id)){
+            setTyping(false)
+            loadThread(openWith._id)
+        }
+        loadConversations()
+    },[openWith,state,loadThread,loadConversations])
+
+    useSocketEvent('typing',({from,typing:isTyping})=>{
+        if(openWith && String(from) === String(openWith._id)){
+            setTyping(isTyping)
+        }
+    },[openWith])
+
+    useSocketEvent('read',({by})=>{
+        if(openWith && String(by) === String(openWith._id)){
+            setSeen(true)
+        }
+    },[openWith])
+
+    //tell them I am typing, and stop saying so once I pause
+    const onDraft = (value)=>{
+        setDraft(value)
+        if(!openWith){
+            return
+        }
+        emitTyping(openWith._id,true)
+        clearTimeout(typingTimer.current)
+        typingTimer.current = setTimeout(()=>emitTyping(openWith._id,false),1500)
+    }
+
+    useEffect(()=>()=>clearTimeout(typingTimer.current),[])
 
     useEffect(()=>{
         if(bottom.current){
             bottom.current.scrollIntoView({block:"end"})
         }
-    },[thread])
+    },[thread,typing])
 
     const send = (e)=>{
         e.preventDefault()
@@ -80,6 +129,9 @@ const Messages = ()=>{
             }
             setThread(list=>[...list,result.message])
             setDraft("")
+            setSeen(false)
+            emitTyping(openWith._id,false)
+            clearTimeout(typingTimer.current)
             loadConversations()
         })
         .catch(err=>{
@@ -152,6 +204,7 @@ const Messages = ()=>{
                       <div className="thread-head">
                           <Avatar src={openWith.pic} alt={openWith.username}/>
                           <Link className="author" to={"/profile/"+openWith._id}>{openWith.username || openWith.name}</Link>
+                          {typing && <span className="muted small typing-note">typing…</span>}
                       </div>
                       <div className="thread-body">
                           {thread.length === 0 && <p className="muted small center-text">No messages yet.</p>}
@@ -170,6 +223,12 @@ const Messages = ()=>{
                                   </div>
                               )
                           })}
+                          {seen && thread.length > 0 && <p className="seen-label muted small">Seen</p>}
+                          {typing &&
+                              <div className="bubble typing-bubble">
+                                  <span></span><span></span><span></span>
+                              </div>
+                          }
                           <div ref={bottom}></div>
                       </div>
                       <form className="thread-composer" onSubmit={send}>
@@ -177,7 +236,7 @@ const Messages = ()=>{
                               type="text"
                               placeholder="Message…"
                               value={draft}
-                              onChange={(e)=>setDraft(e.target.value)}
+                              onChange={(e)=>onDraft(e.target.value)}
                           />
                           <button className="send-btn" type="submit" disabled={!draft.trim()}>Send</button>
                       </form>
