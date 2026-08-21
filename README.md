@@ -2,6 +2,9 @@
 
 An Instagram clone built as a MERN full-stack app — a React single-page frontend talking to an Express/MongoDB REST API with JWT authentication.
 
+For how it is built — the three backend layers, what every file does, and the
+rules the code follows — see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Features
 
 - Sign up / sign in with hashed passwords and JWT sessions
@@ -154,12 +157,18 @@ regular dependency, not a dev-only one.
 
 The script carries two flags worth knowing about:
 
-- `--watch app.js --watch routes …` — only the API's own folders. Left unrestricted,
-  nodemon watches the whole repo including `instaclone-frontend`, so every React
-  save would pointlessly restart the API.
-- `--exec /usr/local/bin/node` — pins Node 22. `bcrypt` is a native module built for
-  that ABI and will not load on a newer default `node`, and this saves typing a
-  `PATH=` prefix every time.
+- `--ignore instaclone-frontend` — nodemon otherwise watches the whole repo, so every
+  React save would pointlessly restart the API. Everything else is watched, which
+  means a new backend folder needs no change to this script.
+- `--exec /usr/local/bin/node` — pins Node 22, and the API **will not start without
+  it** on a newer default `node`. `jsonwebtoken` reaches `buffer-equal-constant-time`,
+  which uses `SlowBuffer`; Node removed that after 22, so the process dies on startup
+  with `Cannot read properties of undefined (reading 'prototype')` from inside
+  `node_modules`. Only versions 1.0.0 and 1.0.1 of that package were ever published
+  and neither is fixed, and upgrading `jsonwebtoken` does not help because its
+  `jws → jwa` chain still depends on it. `app.js` checks for this and exits with a
+  plain message rather than that stack trace. This is why plain `nodemon app.js`
+  does not work.
 
 Use `npm run serve` for a plain `node app.js` with no watcher — that is what you
 want in production.

@@ -4,9 +4,9 @@
   "description": "Instaclone backend",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon --exec /usr/local/bin/node --watch app.js --watch routes --watch models --watch middleware --watch lib --watch config app.js",
+    "start": "nodemon --exec /usr/local/bin/node --ignore instaclone-frontend app.js",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix instaclone-frontend && npm run build --prefix instaclone-frontend",
-    "serve": "node app.js",
+    "serve": "/usr/local/bin/node app.js",
     "vercel-build": "npm install --prefix instaclone-frontend && NODE_OPTIONS=--openssl-legacy-provider npm run build --prefix instaclone-frontend"
   },
   "author": "Nikhilapatel Badri",

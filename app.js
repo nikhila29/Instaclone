@@ -1,3 +1,15 @@
+/*
+ * jsonwebtoken reaches buffer-equal-constant-time, which uses SlowBuffer —
+ * removed from node after 22. Running this on a newer node dies with an
+ * unhelpful "Cannot read properties of undefined" from inside node_modules,
+ * so say what is wrong instead. `npm start` pins the right binary.
+ */
+if(!require('buffer').SlowBuffer){
+    console.log(`node ${process.version} cannot run this project: a jsonwebtoken dependency needs SlowBuffer, which this version removed.`)
+    console.log("run `npm start`, which pins node 22, or switch with `nvm use 22`")
+    process.exit(1)
+}
+
 require('dotenv').config()
 const express = require('express')
 const app = express()
@@ -22,11 +34,23 @@ mongoose.connect(MONGOURI,{
     useUnifiedTopology: true
 
 })
+/*
+ * The driver reconnects on its own whenever the link drops. Only logging the
+ * connect made a dropped link invisible and every reconnect look like a fresh
+ * start, so the drop is logged too and repeats are counted.
+ */
+let mongoConnects = 0
 mongoose.connection.on('connected',()=>{
-    console.log("conneted to mongo yeahhoo")
+    mongoConnects++
+    console.log(mongoConnects === 1
+        ? "conneted to mongo yeahhoo"
+        : `re-connected to mongo (connection #${mongoConnects}) — the link had dropped`)
+})
+mongoose.connection.on('disconnected',()=>{
+    console.log("lost the mongo connection — the driver will retry")
 })
 mongoose.connection.on('error',(err)=>{
-    console.log("err connecting",err)
+    console.log("err connecting",err.message)
 })
 
 require('./models/user')
